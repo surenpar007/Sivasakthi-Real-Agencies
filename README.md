@@ -22,7 +22,7 @@ A fast, static website. No server, database or monthly software needed. Any web 
 
 ## Before going live (10 minutes)
 
-1. **Your domain.** Send the domain to your developer: the canonical links, social-share URLs, `sitemap.xml` and the Sitemap line in `robots.txt` are switched on from it. Until then they are left out on purpose, so Google never sees a wrong address. Then turn on HTTPS in `.htaccess` (see the comments in that file).
+1. **Domain — done.** The site is live at https://sivasakthirealagencies.in. Canonical links, social-share URLs, `sitemap.xml` and `robots.txt` use it; `www.` redirects to the bare domain and HTTPS is forced. Next: add the site to Google Search Console and submit `sitemap.xml`.
 2. **Real listings.** Open `assets/js/data.js` and replace the sample properties with your real ones. Then set `showSampleNote: false`.
 3. **Real photos.** The current photos are AI-generated previews. Put your own photos in `assets/img/` (WebP or JPG, about 1600 px wide for big images, 960 px for cards) and use the file name (without extension) in `data.js`. If you use `.jpg`, also change `.webp` to `.jpg` in `core.js` where cards are built, or convert your photos to WebP at squoosh.app.
 4. **Layout plan.** In `data.js` → `plan`, set the layout name, place, rate per sq.ft, and each plot's size and `status` (`a` available, `b` booked, `s` sold). The plot of the week (KC-09) text is in `index.html`.
@@ -50,8 +50,9 @@ There is no email server. Every enquiry button (property cards, plot map "Hold t
 
 ## Technical notes
 
-- No third-party scripts. Motion is plain JavaScript and CSS (no GSAP, Lenis or three.js), so pages load fast on mobile data. Only Google Fonts loads from outside, and it never blocks the page.
-- Tested with a Lighthouse-style mobile run (4x slower CPU, slow 4G): Home 97–99, Land 99, Sell 99, Contact 99, desktop 100. Check yours at pagespeed.web.dev after going live.
+- No third-party requests at all. Motion is plain JavaScript and CSS; fonts are self-hosted in `assets/fonts/` (subset, preloaded).
+- Every CSS, JS and image link carries `?v=<version>`, so browsers and the Hostinger CDN always get the newest files after a deploy.
+- PageSpeed Insights on the live site (1 Nov 2026), mobile: Home 95–96, Land 96, Sell 94, Contact 98; desktop Home 98. Accessibility, Best Practices and SEO 100 on every page.
 - Animations only run while their section is on screen, and stop when the phone is idle.
 - Images are WebP with a 960 px version for phones; images below the first screen load after the page is ready.
 - It respects "reduce motion" settings, has a skip link, keyboard-usable menu and plot map, and alt text on images.
