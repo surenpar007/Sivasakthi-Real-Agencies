@@ -77,10 +77,11 @@
   /* festive canvas: rising diya embers + gold firework bursts */
   const cv = document.getElementById("festFx"); if (!cv || reduce) return;
   const ctx = cv.getContext("2d"); let W = 0, H = 0, embers = [], sparks = [], vis = false, next = .8;
-  const dpr = Math.min(devicePixelRatio || 1, 1.5);
+  const dpr = 1;
   function size() { W = cv.clientWidth; H = cv.clientHeight; cv.width = W * dpr; cv.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    embers = Array.from({ length: Math.round(W * H / 14000) }, () => ({ x: Math.random() * W, y: Math.random() * H, r: Math.random() * 2.2 + .6, v: Math.random() * 20 + 10, ph: Math.random() * 6.28 })); }
+    embers = Array.from({ length: Math.min(60, Math.round(W * H / 20000)) }, () => ({ x: Math.random() * W, y: Math.random() * H, r: Math.random() * 2.2 + .6, v: Math.random() * 20 + 10, ph: Math.random() * 6.28 })); }
   size(); addEventListener("resize", size);
+  const EMBER = window.SivaFX.glow(255, 200, 90);
   new IntersectionObserver(e => { vis = e[0].isIntersecting; }).observe(sec);
   function burst() {
     const x = W * (.1 + Math.random() * .8), y = H * (.08 + Math.random() * .3), n = 46, hue = Math.random() < .5 ? [255, 210, 31] : [255, 150, 70];
@@ -93,9 +94,8 @@
     ctx.clearRect(0, 0, W, H); ctx.globalCompositeOperation = "lighter";
     for (const m of embers) {
       m.y -= m.v * dt; m.x += Math.sin(t + m.ph) * 10 * dt; if (m.y < -10) { m.y = H + 10; m.x = Math.random() * W; }
-      const a = .25 + .35 * Math.sin(t * 2 + m.ph) ** 2, g = ctx.createRadialGradient(m.x, m.y, 0, m.x, m.y, m.r * 5);
-      g.addColorStop(0, `rgba(255,200,90,${a})`); g.addColorStop(1, "rgba(255,140,40,0)");
-      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(m.x, m.y, m.r * 5, 0, 6.283); ctx.fill();
+      ctx.globalAlpha = .25 + .35 * Math.sin(t * 2 + m.ph) ** 2; const r = m.r * 5;
+      ctx.drawImage(EMBER, m.x - r, m.y - r, r * 2, r * 2);
     }
     next -= dt; if (next <= 0) { burst(); next = 1.6 + Math.random() * 2.4; }
     for (let i = sparks.length - 1; i >= 0; i--) {
@@ -104,6 +104,6 @@
       ctx.strokeStyle = `rgba(${s.c[0]},${s.c[1]},${s.c[2]},${s.life.toFixed(3)})`; ctx.lineWidth = 1.6;
       ctx.beginPath(); ctx.moveTo(s.x, s.y); ctx.lineTo(s.x - s.vx * .04, s.y - s.vy * .04); ctx.stroke();
     }
-    ctx.globalCompositeOperation = "source-over";
+    ctx.globalAlpha = 1; ctx.globalCompositeOperation = "source-over";
   })(last);
 })();

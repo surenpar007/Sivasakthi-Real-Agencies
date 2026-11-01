@@ -50,10 +50,10 @@
   /* golden dust in the sunset light */
   const dustCv = $("#dust"), dctx = dustCv.getContext("2d");
   let DW = 0, DH = 0, motes = [];
-  const dpr = Math.min(devicePixelRatio || 1, 1.5);
+  const dpr = 1;
   function dustSize() {
     DW = dustCv.clientWidth; DH = dustCv.clientHeight; dustCv.width = DW * dpr; dustCv.height = DH * dpr; dctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    motes = Array.from({ length: Math.round(DW * DH / 9000) }, () => ({ x: Math.random() * DW, y: Math.random() * DH, r: Math.random() * 1.8 + .4, v: Math.random() * 14 + 6, ph: Math.random() * 6.28, z: Math.random() }));
+    motes = Array.from({ length: Math.min(90, Math.round(DW * DH / 12000)) }, () => ({ x: Math.random() * DW, y: Math.random() * DH, r: Math.random() * 1.8 + .4, v: Math.random() * 14 + 6, ph: Math.random() * 6.28, z: Math.random() }));
   }
   dustSize(); addEventListener("resize", dustSize);
   function dust(dt, t, k) {
@@ -132,7 +132,6 @@
     if (p < .4) {
       const gs = lerp(1.18, 1, intro) * lerp(1, 1.2, smooth(0, .2, p)) * lerp(1, 1.5, rise);
       lG.style.transform = `translate3d(${(-mxS * 22).toFixed(2)}px,${(-myS * 14 + rise * 60).toFixed(2)}px,0) scale(${gs.toFixed(4)})`;
-      lG.style.filter = rise > .01 ? `blur(${(rise * 6).toFixed(2)}px)` : "none";
     }
     lG.style.opacity = (1 - smooth(.2, .32, p)).toFixed(3);
     lG.style.visibility = p > .34 ? "hidden" : "visible";
@@ -142,7 +141,6 @@
     lA.style.opacity = (smooth(.18, .3, p) * (1 - smooth(.62, .74, p))).toFixed(3);
     lA.style.visibility = p < .16 || p > .76 ? "hidden" : "visible";
     lA.style.transform = `perspective(1400px) translate3d(${(-mxS * 16).toFixed(2)}px,${(-myS * 10 - lerp(80, 0, rise) - pitch * 120).toFixed(2)}px,0) rotateX(${(tilt - pitch * 18).toFixed(2)}deg) scale(${as.toFixed(4)})`;
-    lA.style.filter = pitch > .01 ? `blur(${(pitch * 5).toFixed(2)}px)` : "none";
     flash.style.opacity = (Math.sin(clamp((p - .2) / .14, 0, 1) * Math.PI) * .35 + Math.sin(clamp((p - .62) / .14, 0, 1) * Math.PI) * .18).toFixed(3);
 
     bound.style.strokeDashoffset = (BL * (1 - survey)).toFixed(2);
@@ -174,8 +172,8 @@
       ph.el.style.opacity = v; ph.el.style.visibility = v < .02 ? "hidden" : "visible"; ph.el.style.translate = `0 ${(1 - v) * 20}px`;
     });
     const idx = p < .2 ? 0 : p < .37 ? 1 : p < .66 ? 2 : 3; dots.forEach((d, i) => d.classList.toggle("on", i === idx));
-    tAlt.textContent = Math.round(rise * 120 + pitch * 60) + " M";
-    tView.textContent = idx === 0 ? "GROUND · SUNSET" : idx === 1 ? "DRONE · RISING" : idx === 2 ? "DRONE · SURVEYING" : "TOP VIEW · PLAN";
+    const alt = Math.round(rise * 120 + pitch * 60) + " M"; if (alt !== tAlt.textContent) tAlt.textContent = alt;
+    const view = idx === 0 ? "GROUND · SUNSET" : idx === 1 ? "DRONE · RISING" : idx === 2 ? "DRONE · SURVEYING" : "TOP VIEW · PLAN"; if (view !== tView.textContent) tView.textContent = view;
   }
   requestAnimationFrame(tick);
 })();

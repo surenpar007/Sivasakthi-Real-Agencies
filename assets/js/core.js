@@ -16,7 +16,8 @@
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
   /* shared helpers for the other scripts */
-  window.SivaFX = { reduce, fine, clamp, lerp, smooth, lakh, inr, wa, makeRain };
+  const glow = (r, g, b) => { const c = document.createElement("canvas"); c.width = c.height = 32; const x = c.getContext("2d"), gr = x.createRadialGradient(16, 16, 0, 16, 16, 16); gr.addColorStop(0, `rgba(${r},${g},${b},1)`); gr.addColorStop(1, `rgba(${r},${g},${b},0)`); x.fillStyle = gr; x.fillRect(0, 0, 32, 32); return c; };
+  window.SivaFX = { reduce, fine, clamp, lerp, smooth, lakh, inr, wa, makeRain, glow };
 
   /* ---------- in-page links (native smooth scrolling; sections have scroll-margin for the fixed bar) ---------- */
   const lenis = null; window.SivaFX.lenis = null;
@@ -211,7 +212,7 @@
   /* ---------- rain renderer (used by hero.js too) ---------- */
   function makeRain(cv, opts) {
     const ctx = cv.getContext("2d"); let W = 0, H = 0, drops = [], splash = [];
-    const dpr = Math.min(devicePixelRatio || 1, 1.5);
+    const dpr = 1;
     function nd(init) { const z = Math.random(); return { x: Math.random() * W * 1.2 - W * .1, y: init ? Math.random() * H : -40 - Math.random() * H * .3, z, l: (opts.len || 22) * (.5 + z), v: (opts.speed || 900) * (.55 + z * .7) }; }
     function size() {
       W = cv.clientWidth; H = cv.clientHeight; cv.width = W * dpr; cv.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -248,5 +249,7 @@
   if (hidden) return;
   setTimeout(() => { pill.hidden = false; requestAnimationFrame(() => pill.classList.add("show")); }, 2600);
   pill.querySelector(".op-x").addEventListener("click", e => { e.preventDefault(); e.stopPropagation(); pill.classList.remove("show"); setTimeout(() => { pill.hidden = true; }, 400); try { sessionStorage.setItem("siva-offer-x", "1"); } catch (er) {} });
-  if (offers) new IntersectionObserver(es => pill.classList.toggle("away", es[0].isIntersecting)).observe(offers);
+  /* step aside while the offer section, contact details or footer are on screen, so it never covers them */
+  const on = new Set(), io = new IntersectionObserver(es => { es.forEach(e => e.isIntersecting ? on.add(e.target) : on.delete(e.target)); pill.classList.toggle("away", on.size > 0); });
+  [offers, document.querySelector(".office"), document.querySelector("footer")].forEach(el => el && io.observe(el));
 })();
