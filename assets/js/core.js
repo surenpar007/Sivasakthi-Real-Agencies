@@ -250,6 +250,15 @@
   setTimeout(() => { pill.hidden = false; requestAnimationFrame(() => pill.classList.add("show")); }, 2600);
   pill.querySelector(".op-x").addEventListener("click", e => { e.preventDefault(); e.stopPropagation(); pill.classList.remove("show"); setTimeout(() => { pill.hidden = true; }, 400); try { sessionStorage.setItem("siva-offer-x", "1"); } catch (er) {} });
   /* step aside while the offer section, contact details or footer are on screen, so it never covers them */
-  const on = new Set(), io = new IntersectionObserver(es => { es.forEach(e => e.isIntersecting ? on.add(e.target) : on.delete(e.target)); pill.classList.toggle("away", on.size > 0); });
+  const on = new Set(), io = new IntersectionObserver(es => { es.forEach(e => e.isIntersecting ? on.add(e.target) : on.delete(e.target)); upd(); });
+  /* and wait until the visitor has scrolled past the first screen, so it never sits on the headline or buttons */
+  let top = true; const upd = () => pill.classList.toggle("away", top || on.size > 0);
+  addEventListener("scroll", () => { const t = scrollY < innerHeight * .9; if (t !== top) { top = t; upd(); } }, { passive: true });
   [offers, document.querySelector(".office"), document.querySelector("footer")].forEach(el => el && io.observe(el));
+})();
+
+/* the floating WhatsApp button steps aside while the office card (which has its own WhatsApp button) is on screen */
+(function () {
+  const wa = document.querySelector("a.wa"), card = document.querySelector(".office-card"); if (!wa || !card) return;
+  new IntersectionObserver(es => wa.classList.toggle("away", es[0].isIntersecting), { rootMargin: "0px 0px -60px 0px" }).observe(card);
 })();
