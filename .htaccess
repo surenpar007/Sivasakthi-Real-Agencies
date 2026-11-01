@@ -6,6 +6,7 @@ ErrorDocument 404 /404.html
 # Correct type for WebP images and the web manifest
 AddType image/webp .webp
 AddType application/manifest+json .webmanifest
+AddType font/woff2 .woff2
 
 # Compress text files
 <IfModule mod_deflate.c>
@@ -19,10 +20,28 @@ AddType application/manifest+json .webmanifest
   ExpiresByType image/png "access plus 30 days"
   ExpiresByType image/jpeg "access plus 30 days"
   ExpiresByType image/x-icon "access plus 30 days"
+  ExpiresByType font/woff2 "access plus 1 year"
   ExpiresByType text/css "access plus 1 year"
   ExpiresByType application/javascript "access plus 1 year"
   ExpiresByType text/javascript "access plus 1 year"
   ExpiresByType text/html "access plus 0 seconds"
+</IfModule>
+
+# CSS, JS and fonts never change under the same ?v= link, so browsers and the CDN may keep them for a year
+<IfModule mod_headers.c>
+  <FilesMatch "\.(css|js|woff2)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+  <FilesMatch "\.(html)$">
+    Header set Cache-Control "no-cache"
+  </FilesMatch>
+</IfModule>
+
+# One address: www.sivasakthirealagencies.in -> sivasakthirealagencies.in (HTTPS is already forced by Hostinger)
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteCond %{HTTP_HOST} ^www\.(.+)$ [NC]
+  RewriteRule ^ https://%1%{REQUEST_URI} [R=301,L]
 </IfModule>
 
 # Security headers
@@ -31,17 +50,12 @@ AddType application/manifest+json .webmanifest
   Header always set X-Frame-Options "SAMEORIGIN"
   Header always set Referrer-Policy "strict-origin-when-cross-origin"
   Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
-  # After HTTPS is on and working, remove the # below (tells browsers to always use HTTPS)
-  # Header always set Strict-Transport-Security "max-age=31536000"
+  Header always set Strict-Transport-Security "max-age=31536000"
 </IfModule>
 
 # No directory listings
 Options -Indexes
 
-# Force HTTPS — turn on AFTER the free SSL certificate is active in hPanel (remove the # on the 3 lines below)
-# RewriteEngine On
-# RewriteCond %{HTTPS} off
-# RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
 # Do not serve the README or git files
 <FilesMatch "^(README\.md|\.gitignore)$">

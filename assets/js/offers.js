@@ -16,7 +16,7 @@
     const tel = "+91" + p.phone.replace(/\D/g, "");
     return `<article class="oc" style="--i:${i}">
       <button class="oc-poster" type="button" data-poster="${esc(p.poster)}" aria-label="View the ${esc(p.name)} offer poster">
-        <img src="assets/img/${esc(p.poster)}.webp" alt="${esc(p.name)} Deepavali offer poster" width="900" height="1125" loading="lazy">
+        <img src="assets/img/${esc(p.poster)}.webp?v=2" alt="${esc(p.name)} Deepavali offer poster" width="900" height="1125" loading="lazy">
         <span class="oc-shine" aria-hidden="true"></span><span class="oc-zoom">View poster</span>
       </button>
       <div class="oc-body">
@@ -65,7 +65,7 @@
   const box = document.getElementById("posterBox"), boxImg = box && box.querySelector("img");
   grid.addEventListener("click", e => {
     const b = e.target.closest(".oc-poster"); if (!b || !box) return;
-    boxImg.src = `assets/img/${b.dataset.poster}.webp`; boxImg.alt = b.getAttribute("aria-label").replace("View the ", "");
+    boxImg.src = `assets/img/${b.dataset.poster}.webp?v=2`; boxImg.alt = b.getAttribute("aria-label").replace("View the ", "");
     if (box.showModal) { box.showModal(); FX.lenis && FX.lenis.stop(); } else box.setAttribute("open", "");
   });
   if (box) {

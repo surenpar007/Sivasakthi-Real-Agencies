@@ -83,7 +83,7 @@
     if (grid.dataset.featured) list = list.filter(p => p.featured);
     if (limit) list = list.slice(0, limit);
     grid.innerHTML = list.map(p => `<article class="card${p.offer ? " offer" : ""}" data-t="${esc(p.type)}">
-  <div class="art"><img src="assets/img/${esc(p.img)}.webp" alt="${esc(p.name)}, ${esc(p.location)}" loading="lazy" decoding="async" width="960" height="540"><span class="shadeb"></span>${p.real ? "" : '<span class="sample">Sample</span>'}<span class="tag">${esc(p.tag)}</span></div>
+  <div class="art"><img src="assets/img/${esc(p.img)}.webp?v=2" alt="${esc(p.name)}, ${esc(p.location)}" loading="lazy" decoding="async" width="960" height="540"><span class="shadeb"></span>${p.real ? "" : '<span class="sample">Sample</span>'}<span class="tag">${esc(p.tag)}</span></div>
   <div class="body"><span class="pid">REF ${esc(p.id)}</span><h3>${esc(p.name)}</h3><div class="loc">${pin}${esc(p.location)}</div>
    <div class="specs">${(p.specs || []).map(s => `<b style="font-weight:400">${s[0] ? `<span>${esc(s[0])} </span>` : ""}${esc(s[1])}</b>`).join("")}</div>
    <div class="foot"><div class="price">${p.rate ? `<s>₹${p.oldRate.toLocaleString("en-IN")}</s> ₹${p.rate}<small>/sq.ft</small><span class="tot">≈ ${lakh(p.price)} total</span>` : lakh(p.price)}</div>
