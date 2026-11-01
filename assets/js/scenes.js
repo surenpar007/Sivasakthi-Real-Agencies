@@ -5,9 +5,14 @@
   const { reduce, fine, clamp, lerp, smooth } = FX;
   const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const prog = el => { const r = el.getBoundingClientRect(); return clamp(-r.top / Math.max(1, r.height - innerHeight), 0, 1); };
-  const seen = el => { const r = el.getBoundingClientRect(); return r.bottom > 0 && r.top < innerHeight; };
+  /* visibility comes from IntersectionObserver, so idle frames never read layout */
+  const vis = new WeakMap();
+  const vio = new IntersectionObserver(es => es.forEach(e => vis.set(e.target, e.isIntersecting)), { rootMargin: "100px 0px" });
+  const seen = el => vis.get(el) === true;
+  const watch = el => { if (el) vio.observe(el); };
 
-  /* cover-fit a 16:9 frame inside a box, keeping a focal point (in 1280×720 space) in view */
+  const CQ = window.CSS && CSS.supports("width", "1cqw");
+  /* fallback for older browsers: cover-fit a 16:9 frame inside a box, keeping a focal point (in 1280×720 space) in view */
   function cover(frame, box, fx, fy) {
     const W = box.clientWidth, H = box.clientHeight, s = Math.max(W / 1280, H / 720), fw = 1280 * s, fh = 720 * s;
     Object.assign(frame.style, { width: fw + "px", height: fh + "px", left: clamp(W / 2 - fx * s, W - fw, 0) + "px", top: clamp(H / 2 - fy * s, H - fh, 0) + "px" });
@@ -21,7 +26,7 @@
   const bound = $("#spotBound"); let BL = 0;
   if (spot) {
     BL = bound.getTotalLength(); bound.style.strokeDasharray = BL; bound.style.strokeDashoffset = BL;
-    const fit = () => cover(spotFrame, spotMedia, innerWidth < 900 ? 640 : 700, 360); fit(); addEventListener("resize", fit);
+    const fit = () => cover(spotFrame, spotMedia, innerWidth < 900 ? 640 : 700, 360); if (!CQ) { fit(); addEventListener("resize", fit); }
   }
 
   /* ---------- 2 · horizontal gallery ---------- */
@@ -38,7 +43,7 @@
 
   /* ---------- 3 · dream home ---------- */
   const dream = $("#dream"), dMedia = $("#dreamMedia"), dFrame = dream && $(".frame", dream), dLit = $("#dreamLit"), dLabels = dream ? $$(".dl", dream) : [];
-  if (dream) { const fit = () => cover(dFrame, dMedia, innerWidth < 900 ? 860 : 760, 330); fit(); addEventListener("resize", fit); }
+  if (dream) { const fit = () => cover(dFrame, dMedia, innerWidth < 900 ? 860 : 760, 330); if (!CQ) { fit(); addEventListener("resize", fit); } }
 
   /* ---------- 4 · night closing: car light trails on the main road + fireflies ---------- */
   const nCv = $("#nightFx"), nBox = nCv && nCv.parentElement;
@@ -85,11 +90,12 @@
     nctx.globalCompositeOperation = "source-over";
   }
 
+  [spot, gal, dream, nBox].forEach(watch);
   let last = performance.now();
   (function tick(now) {
     requestAnimationFrame(tick);
     const dt = Math.min((now - last) / 1000, .05), t = now / 1000; last = now;
-    if (document.hidden) return;
+    if (document.hidden || !(seen(spot) || seen(gal) || seen(dream) || seen(nBox))) return;
     sx = lerp(sx, mx, .05); sy = lerp(sy, my, .05);
 
     if (spot && seen(spot)) {

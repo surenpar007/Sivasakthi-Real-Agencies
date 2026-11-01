@@ -1,4 +1,2 @@
 User-agent: *
 Allow: /
-
-Sitemap: https://YOUR-DOMAIN.in/sitemap.xml

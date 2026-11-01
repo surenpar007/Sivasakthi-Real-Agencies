@@ -1,14 +1,12 @@
 # Sivasakthi Real Agencies — website
 
-Live files for the Sivasakthi Real Agencies website (Villupuram). Static HTML, CSS and JavaScript: no build step, no database.
-
 A fast, static website. No server, database or monthly software needed. Any web host can serve it.
 
 ## What's inside
 
 | File | What it is |
 |---|---|
-| `index.html` | Home: sunset-to-drone land hero, Deepavali offers, featured land, plot of the week, layout gallery, document checklist, contact |
+| `index.html` | Home: monsoon-to-golden-hour land hero, featured land, 3D plot map, document checklist, contact |
 | `properties.html` | All land for sale with filters (`properties.html?type=plot`, `farm`, `commercial`, `home`), plot loan EMI calculator, FAQ |
 | `sell.html` | For owners selling land: process + form that opens WhatsApp with their details |
 | `contact.html` | Phones, WhatsApp, office address with Google Maps link, FAQ |
@@ -24,7 +22,7 @@ A fast, static website. No server, database or monthly software needed. Any web 
 
 ## Before going live (10 minutes)
 
-1. **Your domain.** Search all files for `YOUR-DOMAIN.in` and replace it with your real domain (for example `sivasakthirealagencies.in`). It appears in the `<head>` of each page, `sitemap.xml` and `robots.txt`.
+1. **Your domain.** Send the domain to your developer: the canonical links, social-share URLs, `sitemap.xml` and the Sitemap line in `robots.txt` are switched on from it. Until then they are left out on purpose, so Google never sees a wrong address. Then turn on HTTPS in `.htaccess` (see the comments in that file).
 2. **Real listings.** Open `assets/js/data.js` and replace the sample properties with your real ones. Then set `showSampleNote: false`.
 3. **Real photos.** The current photos are AI-generated previews. Put your own photos in `assets/img/` (WebP or JPG, about 1600 px wide for big images, 960 px for cards) and use the file name (without extension) in `data.js`. If you use `.jpg`, also change `.webp` to `.jpg` in `core.js` where cards are built, or convert your photos to WebP at squoosh.app.
 4. **Layout plan.** In `data.js` → `plan`, set the layout name, place, rate per sq.ft, and each plot's size and `status` (`a` available, `b` booked, `s` sold). The plot of the week (KC-09) text is in `index.html`.
@@ -39,8 +37,7 @@ The Deepavali offer cards come from `projects` in `data.js` (name, location, old
 Pick one:
 
 - **Netlify (free, easiest):** go to app.netlify.com → *Add new site* → *Deploy manually* → drag this whole folder in. Then *Domain settings* → add your domain and follow the DNS steps.
-- **Hostinger with GitHub (recommended, auto-updates):** hPanel → *Websites* → *Manage* → *Advanced* → *Git*. Repository: `https://github.com/surenpar007/Sivasakthi-Real-Agencies.git`, branch `main`, install path: leave empty (deploys to `public_html`). Click *Create*, then *Deploy*. Turn on *Auto Deployment* and add the webhook URL it shows to GitHub → repo *Settings* → *Webhooks* so every push goes live automatically. `public_html` must be empty before the first deploy (delete Hostinger's default `default.php`).
-- **Hostinger without Git:** *File Manager* → `public_html` → upload everything in this folder (keep the `assets` folder structure, include `.htaccess`).
+- **Hostinger / GoDaddy / any cPanel host:** open *File Manager* → `public_html` → upload everything in this folder (keep the `assets` folder structure).
 - **GitHub Pages / Cloudflare Pages / Vercel:** push the folder to a repository and connect it. No build step is needed.
 
 After it is live:
@@ -53,7 +50,10 @@ There is no email server. Every enquiry button (property cards, plot map "Hold t
 
 ## Technical notes
 
-- Libraries load from public CDNs with fixed versions: GSAP 3.12.2, Lenis 1.0.42, three.js r128, Google Fonts.
-- The site works without them too: if a CDN is blocked, content, links and forms still work; only the motion is skipped.
+- No third-party scripts. Motion is plain JavaScript and CSS (no GSAP, Lenis or three.js), so pages load fast on mobile data. Only Google Fonts loads from outside, and it never blocks the page.
+- Tested with a Lighthouse-style mobile run (4x slower CPU, slow 4G): Home 97–99, Land 99, Sell 99, Contact 99, desktop 100. Check yours at pagespeed.web.dev after going live.
+- Animations only run while their section is on screen, and stop when the phone is idle.
+- Images are WebP with a 960 px version for phones; images below the first screen load after the page is ready.
 - It respects "reduce motion" settings, has a skip link, keyboard-usable menu and plot map, and alt text on images.
-- Structured data (`RealEstateAgent` and `FAQPage`) is included so Google can show your business details.
+- Structured data (`RealEstateAgent`, and `FAQPage` on the contact page) is included so Google can show your business details.
+- `.htaccess` turns on compression, browser caching, security headers and the 404 page on Hostinger.

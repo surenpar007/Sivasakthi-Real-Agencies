@@ -38,7 +38,14 @@
     Object.assign(fr.style, { width: fw + "px", height: fh + "px", left: clamp(W / 2 - fx * s, W - fw, 0) + "px", top: clamp(H / 2 - fy * s, H - fh, 0) + "px" });
   }
   const fit = () => $$(".frame", hero).forEach(f => fitFrame(f, stage));
-  fit(); addEventListener("resize", fit);
+  const CQ = window.CSS && CSS.supports("width", "1cqw"); // modern browsers size the frames in CSS (no layout shift)
+  if (!CQ) { fit(); addEventListener("resize", fit); }
+
+  /* the aerial and plan photos are not visible at first: load them after the page has finished loading */
+  const lazyHero = () => $$("img[data-src]", hero).forEach(img => { if (img.dataset.srcset) img.srcset = img.dataset.srcset; img.src = img.dataset.src; img.removeAttribute("data-src"); });
+  const kick = () => ("requestIdleCallback" in window ? requestIdleCallback(lazyHero, { timeout: 2500 }) : setTimeout(lazyHero, 1200));
+  if (document.readyState === "complete") kick(); else addEventListener("load", kick, { once: true });
+  addEventListener("scroll", function once() { if (scrollY > innerHeight * .4) { lazyHero(); removeEventListener("scroll", once); } }, { passive: true });
 
   /* golden dust in the sunset light */
   const dustCv = $("#dust"), dctx = dustCv.getContext("2d");
@@ -67,7 +74,7 @@
   if (built) {
     const bfit = () => { const W = bMedia.clientWidth, H = bMedia.clientHeight, s = Math.max(W / 1280, H / 720), fw = 1280 * s, fh = 720 * s;
       Object.assign(bFrame.style, { width: fw + "px", height: fh + "px", left: clamp(W / 2 - 700 * s, W - fw, 0) + "px", top: clamp(H / 2 - 400 * s, H - fh, 0) + "px" }); };
-    bfit(); addEventListener("resize", bfit);
+    if (!(window.CSS && CSS.supports("width", "1cqw"))) { bfit(); addEventListener("resize", bfit); }
     new IntersectionObserver(e => { builtVis = e[0].isIntersecting; }).observe(built);
     if (reduce) cos.forEach(c => c.classList.add("on"));
   }
@@ -78,7 +85,7 @@
   let bandVis = false; if (band) new IntersectionObserver(e => { bandVis = e[0].isIntersecting; }).observe(band);
   const docsImg = $(".docs-img img");
 
-  let pS = 0, bS = 0, mx = 0, my = 0, mxS = 0, myS = 0, last = performance.now();
+  let pS = 0, bS = 0, mx = 0, my = 0, mxS = 0, myS = 0, last = performance.now(), lastP = -1;
   addEventListener("pointermove", e => { mx = e.clientX / innerWidth - .5; my = e.clientY / innerHeight - .5; }, { passive: true });
   const phases = $$(".phase", hero).map(el => { const [a, b] = el.dataset.range.split(",").map(Number); return { el, a, b }; });
   const dots = $$(".progress span", hero), tView = $("#tView"), tAlt = $("#tAlt");
@@ -109,7 +116,12 @@
     }
     if (!heroVis) return;
 
-    const p = pS = reduce ? progOf(hero) : lerp(pS, progOf(hero), .085);
+    const target = progOf(hero);
+    const p = pS = reduce ? target : lerp(pS, target, .085);
+    /* idle: nothing moved since last frame → only the dust needs drawing */
+    const still = Math.abs(target - p) < 1e-4 && Math.abs(mx - mxS) < 1e-3 && Math.abs(my - myS) < 1e-3 && t > 2.6;
+    if (still && lastP === p) { if (!reduce && p < .4) dust(dt, t, 1 - smooth(.18, .32, p) * .7); return; }
+    lastP = p;
     const rise = smooth(.16, .34, p);       // ground → aerial
     const survey = smooth(.38, .52, p);     // corner plot boundary
     const pitch = smooth(.6, .78, p);       // aerial → straight down
@@ -121,7 +133,6 @@
       const gs = lerp(1.18, 1, intro) * lerp(1, 1.2, smooth(0, .2, p)) * lerp(1, 1.5, rise);
       lG.style.transform = `translate3d(${(-mxS * 22).toFixed(2)}px,${(-myS * 14 + rise * 60).toFixed(2)}px,0) scale(${gs.toFixed(4)})`;
       lG.style.filter = rise > .01 ? `blur(${(rise * 6).toFixed(2)}px)` : "none";
-      sun.setAttribute("r", (210 + Math.sin(t * 1.4) * 14).toFixed(1));
     }
     lG.style.opacity = (1 - smooth(.2, .32, p)).toFixed(3);
     lG.style.visibility = p > .34 ? "hidden" : "visible";

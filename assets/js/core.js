@@ -5,8 +5,6 @@
   const B = D.business || {};
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const fine = matchMedia("(hover:hover) and (pointer:fine)").matches;
-  const hasG = typeof gsap !== "undefined";
-  const hasST = hasG && typeof ScrollTrigger !== "undefined";
   const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
   const lerp = (a, b, t) => a + (b - a) * t;
   const smooth = (a, b, v) => { const t = clamp((v - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
@@ -20,23 +18,9 @@
   /* shared helpers for the other scripts */
   window.SivaFX = { reduce, fine, clamp, lerp, smooth, lakh, inr, wa, makeRain };
 
-  if (hasST) gsap.registerPlugin(ScrollTrigger);
-
-  /* ---------- smooth scroll ---------- */
-  let lenis = null;
-  if (!reduce && typeof Lenis !== "undefined") {
-    try {
-      lenis = new Lenis({ duration: 1.15, easing: t => Math.min(1, 1.001 - Math.pow(2, -10 * t)) });
-      if (hasG) { gsap.ticker.add(t => lenis.raf(t * 1000)); gsap.ticker.lagSmoothing(0); }
-      else { const r = t => { lenis.raf(t); requestAnimationFrame(r); }; requestAnimationFrame(r); }
-      if (hasST) lenis.on("scroll", ScrollTrigger.update);
-    } catch (e) { lenis = null; }
-  }
-  window.SivaFX.lenis = lenis;
-  function scrollToEl(el) {
-    if (lenis) lenis.scrollTo(el, { offset: -70 });
-    else el.scrollIntoView({ behavior: reduce ? "auto" : "smooth" });
-  }
+  /* ---------- in-page links (native smooth scrolling; sections have scroll-margin for the fixed bar) ---------- */
+  const lenis = null; window.SivaFX.lenis = null;
+  function scrollToEl(el) { el.scrollIntoView({ behavior: reduce ? "auto" : "smooth" }); }
   document.addEventListener("click", e => {
     const a = e.target.closest('a[href*="#"]');
     if (!a) return;
@@ -59,43 +43,18 @@
   function closeMenu() {
     if (!menu || !menu.classList.contains("open")) return;
     menu.classList.remove("open"); burger.setAttribute("aria-expanded", "false");
-    document.body.classList.remove("menu-open"); lenis && lenis.start();
+    document.body.classList.remove("menu-open");
   }
   if (burger && menu) {
     burger.addEventListener("click", () => {
       const open = !menu.classList.contains("open");
       menu.classList.toggle("open", open); burger.setAttribute("aria-expanded", String(open));
       document.body.classList.toggle("menu-open", open);
-      if (open) { lenis && lenis.stop(); setTimeout(() => { const f = $("a", menu); f && f.focus(); }, 300); }
-      else lenis && lenis.start();
+      if (open) setTimeout(() => { const f = $("a", menu); f && f.focus(); }, 300);
     });
     addEventListener("keydown", e => { if (e.key === "Escape") { closeMenu(); burger.focus(); } });
     $$("a", menu).forEach(a => a.addEventListener("click", closeMenu));
   }
-
-  /* ---------- loader (home page, once per visit) ---------- */
-  const loader = $("#loader");
-  function intro() {
-    if (!hasG || reduce) return;
-    gsap.from(".intro-line > span", { yPercent: 110, duration: 1.2, ease: "expo.out", stagger: .09 });
-    gsap.from(".intro-fade", { y: 24, opacity: 0, duration: 1, ease: "power3.out", delay: .3, stagger: .1 });
-  }
-  if (loader) {
-    let seen = false;
-    try { seen = sessionStorage.getItem("siva-intro") === "1"; sessionStorage.setItem("siva-intro", "1"); } catch (e) {}
-    if (hasG && !reduce && !seen) {
-      const cells = $("#cells");
-      const cols = innerWidth < 700 ? 8 : 16, rows = innerWidth < 700 ? 12 : 9;
-      cells.style.setProperty("--cols", cols); cells.style.setProperty("--rows", rows);
-      for (let i = 0; i < cols * rows; i++) cells.appendChild(document.createElement("i"));
-      const o = { v: 0 };
-      gsap.timeline()
-        .to(o, { v: 100, duration: 1.4, ease: "power2.inOut", onUpdate: () => { $("#lcount").textContent = String(Math.round(o.v)).padStart(3, "0"); $("#lbar").style.width = o.v + "%"; } })
-        .to(".loader .mark", { opacity: 0, y: -12, duration: .35 })
-        .to(".loader .cells i", { scale: 0, duration: .55, ease: "power2.in", stagger: { each: .006, from: "random" } }, "-=.05")
-        .add(() => { loader.remove(); intro(); }, "-=.35");
-    } else { loader.remove(); intro(); }
-  } else intro();
 
   /* ---------- buy / sell toggle ---------- */
   const mode = $("#mode");
@@ -139,7 +98,7 @@
       cards.forEach(c => c.classList.toggle("hide", f !== "all" && c.dataset.t !== f));
       const shown = cards.filter(c => !c.classList.contains("hide"));
       $(".empty", grid).hidden = shown.length > 0;
-      if (animate && hasG && !reduce) gsap.fromTo(shown, { y: 30, rotateX: -8 }, { y: 0, rotateX: 0, duration: .7, ease: "power3.out", stagger: .06, clearProps: "transform" });
+      if (animate && !reduce) shown.forEach((c, k) => { c.classList.remove("pop"); void c.offsetWidth; c.style.setProperty("--k", k); c.classList.add("pop"); });
     }
     btns.forEach(b => b.addEventListener("click", () => {
       applyFilter(b.dataset.f, true);
@@ -161,9 +120,10 @@
   /* ---------- cursor + magnetic buttons ---------- */
   const cur = $("#cursor");
   if (cur && fine && !reduce) {
-    let cx = innerWidth / 2, cy = innerHeight / 2, tx = cx, ty = cy;
-    addEventListener("pointermove", e => { tx = e.clientX; ty = e.clientY; }, { passive: true });
-    (function loop() { cx = lerp(cx, tx, .2); cy = lerp(cy, ty, .2); cur.style.transform = `translate(${cx}px,${cy}px)`; requestAnimationFrame(loop); })();
+    let cx = innerWidth / 2, cy = innerHeight / 2, tx = cx, ty = cy, running = false;
+    const loop = () => { cx = lerp(cx, tx, .2); cy = lerp(cy, ty, .2); cur.style.transform = `translate(${cx}px,${cy}px)`;
+      if (Math.abs(tx - cx) + Math.abs(ty - cy) > .3) requestAnimationFrame(loop); else running = false; };
+    addEventListener("pointermove", e => { tx = e.clientX; ty = e.clientY; if (!running) { running = true; requestAnimationFrame(loop); } }, { passive: true });
     document.addEventListener("pointerover", e => cur.classList.toggle("big", !!e.target.closest("a,button,.card,#plot3d,summary")));
     $$(".magnetic").forEach(b => {
       b.addEventListener("pointermove", e => { const r = b.getBoundingClientRect(); b.style.transform = `translate(${(e.clientX - r.left - r.width / 2) * .25}px,${(e.clientY - r.top - r.height / 2) * .35}px)`; });
@@ -176,16 +136,19 @@
     if (!en.isIntersecting) return; io.unobserve(en.target);
     const el = en.target, to = +el.dataset.count, suf = el.dataset.suffix;
     const set = v => { el.innerHTML = Math.round(v).toLocaleString("en-IN") + (suf ? `<sup>${suf}</sup>` : ""); };
-    if (!hasG || reduce) return set(to);
-    const o = { v: 0 }; gsap.to(o, { v: to, duration: 2, ease: "power3.out", onUpdate: () => set(o.v) });
+    if (reduce) return set(to);
+    const t0 = performance.now();
+    (function step(now) { const k = clamp((now - t0) / 1800, 0, 1); set(to * (1 - Math.pow(1 - k, 3))); if (k < 1) requestAnimationFrame(step); })(t0);
   }), { threshold: .4 });
   $$("[data-count]").forEach(el => io.observe(el));
 
   /* ---------- reveals (transform only, text stays readable) ---------- */
-  if (hasST && !reduce) {
-    $$(".head h2, .steps li, .emi, .closing h2, .docs-list li, .c-tile, .faq details, .teaser").forEach(el =>
-      gsap.from(el, { y: 50, duration: 1.1, ease: "expo.out", scrollTrigger: { trigger: el, start: "top 92%" } }));
-    if ($(".marquee div")) gsap.to(".marquee div", { xPercent: -8, ease: "none", scrollTrigger: { trigger: ".closing", scrub: true } });
+  if (!reduce && "IntersectionObserver" in window) {
+    const rio = new IntersectionObserver(es => es.forEach(en => { if (en.isIntersecting) { en.target.classList.add("in"); rio.unobserve(en.target); } }), { rootMargin: "0px 0px -8% 0px" });
+    $$(".head h2, .steps li, .emi, .closing h2, .docs-list li, .c-tile, .faq details, .teaser").forEach(el => {
+      const r = el.getBoundingClientRect(); if (r.top < innerHeight) return; // already on screen: leave it alone
+      el.classList.add("rv"); rio.observe(el);
+    });
   }
 
   /* ---------- sell form → WhatsApp ---------- */
